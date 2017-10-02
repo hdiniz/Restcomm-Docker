@@ -14,7 +14,7 @@ RUN locale-gen en_US en_US.UTF-8 && dpkg-reconfigure locales
 
 RUN add-apt-repository ppa:openjdk-r/ppa  -y && \
 apt-cache search mysql-client-core && \
-apt-get update && apt-get install -y screen wget ipcalc bsdtar openjdk-7-jdk mysql-client-core-5.7 openssl unzip nfs-common tcpdump dnsutils net-tools xmlstarlet && \
+apt-get update && apt-get install -y screen wget ipcalc bsdtar openjdk-7-jdk mysql-client-core-5.7 openssl unzip nfs-common tcpdump dnsutils net-tools xmlstarlet nodejs npm && \
 apt-get autoremove && \
 apt-get autoclean && \
 rm -rf /var/lib/apt/lists/*
@@ -27,6 +27,26 @@ unzip Restcomm-JBoss-AS7.zip -d /opt/ && mv /opt/Restcomm-JBoss-AS7-*/ ${install
 rm Restcomm-JBoss-AS7.zip
 
 RUN mkdir -p /opt/embed/
+
+# Local build of Restcomm
+
+#RUN mkdir -p /tmp/
+#ADD ./restcomm.zip /tmp/restcomm.zip
+#RUN unzip /tmp/restcomm.zip -d /opt/ && mv /opt/Restcomm-JBoss-AS7-*/ ${install_dir} && rm /tmp/restcomm.zip
+
+# Voice mail app
+RUN mkdir -p /opt/voice_mail/
+ADD ./voice_mail/package.json /opt/voice_mail/
+RUN cd /opt/voice_mail/ && npm install
+
+ADD voice_mail /opt/voice_mail/
+
+# Voice mail app init
+RUN mkdir -p /etc/runit/runsvdir/second/
+RUN mkdir -p /etc/sv/voice_mail
+RUN cp /opt/voice_mail/run.sh /etc/sv/voice_mail/run && chmod +x /etc/sv/voice_mail/run
+RUN ln -s /etc/sv/voice_mail /etc/runit/runsvdir/second/
+
 
 ADD ./ca-startcom.der /opt/Restcomm-JBoss-AS7/ca-startcom.der
 ADD ./cron_files/tcpdump_crontab /etc/cron.d/restcommtcpdump-cron
